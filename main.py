@@ -1,5 +1,7 @@
 import argparse
+
 from scanner.port_scanner import scan_ports
+from scanner.service_detection import detect_service
 
 
 def parse_ports(ports_str: str) -> list[int]:
@@ -18,8 +20,19 @@ def main() -> None:
     results = scan_ports(args.target, ports, args.timeout)
 
     print(f"Scan results for {args.target}")
+
     for result in results:
-        print(f"[{result.state.upper()}] {result.port}/{result.protocol}")
+        if result.state == "open":
+            result.service = detect_service(args.target, result.port, args.timeout)
+
+        line = f"[{result.state.upper()}] {result.port}/{result.protocol}"
+
+        if result.service:
+            service_name = result.service.name
+            service_version = f" ({result.service.version})" if result.service.version else ""
+            line += f" -> {service_name}{service_version}"
+
+        print(line)
 
 
 if __name__ == "__main__":

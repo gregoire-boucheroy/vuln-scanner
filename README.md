@@ -1,0 +1,1 @@
+Output reports are excluded from version control and stored locally.
