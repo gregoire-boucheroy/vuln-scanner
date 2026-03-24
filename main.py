@@ -1,8 +1,9 @@
 import argparse
 
+from scanner.cve_lookup import find_cves
 from scanner.port_scanner import scan_ports
-from scanner.service_detection import detect_service
 from scanner.report import generate_report, save_report
+from scanner.service_detection import detect_service
 
 
 def parse_ports(ports_str: str) -> list[int]:
@@ -27,6 +28,9 @@ def main() -> None:
         if result.state == "open":
             result.service = detect_service(args.target, result.port, args.timeout)
 
+            if result.service:
+                result.vulnerabilities = find_cves(result.service)
+
         line = f"[{result.state.upper()}] {result.port}/{result.protocol}"
 
         if result.service:
@@ -34,8 +38,11 @@ def main() -> None:
             service_version = f" ({result.service.version})" if result.service.version else ""
             line += f" -> {service_name}{service_version}"
 
+        if result.vulnerabilities:
+            line += f" -> {len(result.vulnerabilities)} CVE(s)"
+
         print(line)
-    
+
     if args.output:
         report = generate_report(args.target, results)
         save_report(report, args.output)
